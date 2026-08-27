@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prueba de conexión</title>
+<style>
+  body {
+    font-family: system-ui, sans-serif;
+    max-width: 620px;
+    margin: 40px auto;
+    padding: 0 20px;
+    line-height: 1.6;
+  }
+  h1 { font-size: 20px; }
+  button {
+    background: #16264d; color: #fff; border: none;
+    border-radius: 8px; padding: 11px 18px;
+    font-size: 15px; cursor: pointer; margin-right: 8px;
+  }
+  button:disabled { background: #ccc; }
+  pre {
+    background: #f4f6fa; border: 1px solid #dfe4ee;
+    border-radius: 8px; padding: 14px;
+    white-space: pre-wrap; word-break: break-all;
+    font-size: 13px; margin-top: 16px;
+  }
+  .ok  { color: #15803d; }
+  .mal { color: #c2410c; }
+</style>
+</head>
+<body>
+
+<h1>Prueba de conexión con Apps Script</h1>
+<p>Verifica que el navegador pueda llamar al backend desde otro dominio,
+   y que el micrófono funcione fuera del sandbox de Apps Script.</p>
+
+<button id="probar">Probar conexión</button>
+<button id="micro">Probar micrófono</button>
+
+<pre id="salida">Esperando…</pre>
+
+<script>
+  // Pegá acá la URL de la implementación del proyecto COPIA y su token.
+  var URL_SCRIPT = 'https://script.google.com/macros/s/PEGA_TU_URL_ACA/exec';
+  var TOKEN      = 'PEGA_TU_TOKEN_ACA';
+
+  var salida = document.getElementById('salida');
+
+  function mostrar(texto, clase) {
+    salida.textContent = texto;
+    salida.className = clase || '';
+  }
+
+  // ---------- Conexión ----------
+  document.getElementById('probar').addEventListener('click', function() {
+    mostrar('Llamando al script…');
+
+    // El body va como text/plain a propósito: con application/json el
+    // navegador dispara un preflight OPTIONS que Apps Script no responde,
+    // y la llamada falla por CORS antes de salir.
+    fetch(URL_SCRIPT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({
+        accion: 'chat',
+        chat: 'iniciar',
+        token: TOKEN
+      })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(r) {
+      if (r.ok) {
+        mostrar('Conectado.\n\nEmisor: ' + r.razonSocial +
+                '\nConversación: ' + r.idConversacion, 'ok');
+      } else {
+        mostrar('El script respondió, pero rechazó la llamada:\n\n' +
+                (r.motivo || JSON.stringify(r)), 'mal');
+      }
+    })
+    .catch(function(e) {
+      mostrar('No se pudo llamar al script:\n\n' + e.message +
+              '\n\nSuele ser CORS o la URL mal copiada.', 'mal');
+    });
+  });
+
+  // ---------- Micrófono ----------
+  document.getElementById('micro').addEventListener('click', function() {
+    mostrar('Pidiendo acceso al micrófono…');
+
+    navigator.mediaDevices.getUserMedia({ audio: true })
+      .then(function(stream) {
+        var grabador = new MediaRecorder(stream);
+        var trozos = [];
+        grabador.ondataavailable = function(e) { if (e.data.size) trozos.push(e.data); };
+        grabador.onstop = function() {
+          stream.getTracks().forEach(function(t) { t.stop(); });
+          var blob = new Blob(trozos, { type: grabador.mimeType });
+          mostrar('Grabación lista.\n\nFormato: ' + blob.type +
+                  '\nTamaño: ' + Math.round(blob.size / 1024) + ' KB', 'ok');
+        };
+        grabador.start();
+        mostrar('Grabando 3 segundos… hablá ahora.');
+        setTimeout(function() { grabador.stop(); }, 3000);
+      })
+      .catch(function(e) {
+        mostrar('No se pudo acceder al micrófono:\n\n' + e.name + ' — ' + e.message, 'mal');
+      });
+  });
+</script>
+
+</body>
+</html>
