@@ -3,110 +3,815 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Prueba de conexión</title>
+<title>Asistente de facturación</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
+  :root {
+    --azul:        #16264d;
+    --azul-claro:  #24396e;
+    --dorado:      #f2b705;
+    --fondo:       #f4f6fa;
+    --blanco:      #ffffff;
+    --texto:       #2c3444;
+    --tenue:       #6b7688;
+    --borde:       #dfe4ee;
+    --alerta:      #c2410c;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
   body {
-    font-family: system-ui, sans-serif;
-    max-width: 620px;
-    margin: 40px auto;
-    padding: 0 20px;
-    line-height: 1.6;
+    font-family: 'Inter', -apple-system, system-ui, sans-serif;
+    background: linear-gradient(160deg, #e7ecf5 0%, #dfe5f0 100%);
+    color: var(--texto);
+    height: 100vh;
+    display: flex;
+    font-size: 14px;
+    line-height: 1.5;
   }
-  h1 { font-size: 20px; }
-  button {
-    background: #16264d; color: #fff; border: none;
-    border-radius: 8px; padding: 11px 18px;
-    font-size: 15px; cursor: pointer; margin-right: 8px;
+
+  .panel {
+    width: 100%;
+    max-width: 860px;
+    margin: 0 auto;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    background: var(--fondo);
+    overflow: hidden;
+    box-shadow: 0 0 40px rgba(22, 38, 77, 0.10);
   }
-  button:disabled { background: #ccc; }
-  pre {
-    background: #f4f6fa; border: 1px solid #dfe4ee;
-    border-radius: 8px; padding: 14px;
-    white-space: pre-wrap; word-break: break-all;
-    font-size: 13px; margin-top: 16px;
+  @media (min-width: 900px) {
+    body { padding: 20px 0; }
+    .panel { height: calc(100vh - 40px); border-radius: 16px; }
   }
-  .ok  { color: #15803d; }
-  .mal { color: #c2410c; }
+
+  /* ---------- Encabezado ---------- */
+  header {
+    background: var(--azul);
+    color: var(--blanco);
+    padding: 14px 18px;
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+  header .titulo {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: 16px;
+    letter-spacing: -0.01em;
+  }
+  header .emisor {
+    font-size: 12px;
+    color: rgba(255,255,255,0.6);
+    margin-left: auto;
+    text-align: right;
+    max-width: 45%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* ---------- Conversación ---------- */
+  #hilo {
+    flex: 1;
+    overflow-y: auto;
+    padding: 18px 16px 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .burbuja {
+    max-width: 72%;
+    padding: 10px 14px;
+    border-radius: 14px;
+    animation: entrar 0.22s ease-out;
+  }
+  @keyframes entrar {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: none; }
+  }
+  @media (prefers-reduced-motion: reduce) { .burbuja { animation: none; } }
+
+  .burbuja .hora {
+    display: block;
+    font-size: 10px;
+    margin-top: 4px;
+    text-align: right;
+    opacity: 0.55;
+  }
+  .yo {
+    background: var(--azul);
+    color: var(--blanco);
+    align-self: flex-end;
+    border-bottom-right-radius: 4px;
+  }
+  .asistente {
+    background: var(--blanco);
+    align-self: flex-start;
+    border-bottom-left-radius: 4px;
+    border: 1px solid var(--borde);
+  }
+  .aviso {
+    background: #fff4ed;
+    border: 1px solid #fbd5b5;
+    color: var(--alerta);
+    align-self: stretch;
+    max-width: 100%;
+    font-size: 13px;
+  }
+
+  .pensando { display: flex; gap: 4px; padding: 4px 2px; }
+  .pensando span {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--tenue);
+    animation: latir 1.2s infinite ease-in-out;
+  }
+  .pensando span:nth-child(2) { animation-delay: 0.15s; }
+  .pensando span:nth-child(3) { animation-delay: 0.3s; }
+  @keyframes latir {
+    0%, 60%, 100% { opacity: 0.25; transform: translateY(0); }
+    30%           { opacity: 1;    transform: translateY(-3px); }
+  }
+
+  /* ---------- Tarjeta de comprobante ---------- */
+  .propuesta { align-self: stretch; max-width: 100%; display: flex; flex-direction: column; gap: 10px; }
+  .ticket {
+    background: var(--blanco);
+    border: 1px solid var(--borde);
+    border-radius: 10px;
+    overflow: hidden;
+    display: flex;
+    animation: entrar 0.25s ease-out;
+  }
+  .ticket .cuerpo { flex: 1; padding: 12px 14px; min-width: 0; }
+  .ticket .cliente {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 500;
+    font-size: 13px;
+    color: var(--azul);
+    margin-bottom: 8px;
+    word-break: break-word;
+  }
+  .ticket .referencia { font-size: 11px; color: var(--tenue); margin: -4px 0 8px; }
+  .ticket .item {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 3px 0;
+    font-size: 13px;
+  }
+  .ticket .item .que { min-width: 0; }
+  .ticket .item .detalle { color: var(--tenue); font-size: 11px; }
+  .ticket .item .monto { font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+  .ticket .talon {
+    border-left: 2px dashed var(--borde);
+    padding: 12px 14px;
+    width: 160px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-end;
+    background: #fafbfd;
+    flex-shrink: 0;
+  }
+  .ticket .talon .etiqueta {
+    font-size: 9px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--tenue);
+  }
+  .ticket .talon .parcial {
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    margin-bottom: 4px;
+  }
+  .ticket .talon .total-etq { margin-top: 2px; }
+  .ticket .talon .total {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: 15px;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  .barra-confirmar { display: flex; gap: 8px; }
+  .btn {
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    border: none;
+    border-radius: 8px;
+    padding: 11px 16px;
+    cursor: pointer;
+  }
+  .btn:focus-visible { outline: 2px solid var(--dorado); outline-offset: 2px; }
+  .btn-generar { background: var(--dorado); color: var(--azul); flex: 1; }
+  .btn-generar:disabled { background: var(--borde); color: var(--tenue); cursor: default; }
+
+  .listo {
+    background: var(--azul);
+    color: var(--blanco);
+    border-radius: 10px;
+    padding: 12px 14px;
+    align-self: stretch;
+    max-width: 100%;
+  }
+  .listo .titulo {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 500;
+    margin-bottom: 3px;
+  }
+  .listo .nota { font-size: 12px; color: rgba(255,255,255,0.7); }
+
+  /* ---------- Barra de escritura ---------- */
+  footer {
+    background: var(--blanco);
+    border-top: 1px solid var(--borde);
+    padding: 10px 12px;
+    display: flex;
+    gap: 8px;
+    align-items: flex-end;
+    flex-shrink: 0;
+  }
+  #entrada {
+    flex: 1;
+    font-family: 'Inter', sans-serif;
+    font-size: 16px;   /* 16px evita que iOS haga zoom al enfocar */
+    border: 1px solid var(--borde);
+    border-radius: 18px;
+    padding: 10px 18px;
+    resize: none;
+    max-height: 180px;
+    outline: none;
+  }
+  #entrada:focus { border-color: var(--azul-claro); }
+  #entrada::-webkit-scrollbar { width: 8px; }
+  #entrada::-webkit-scrollbar-track { background: transparent; margin: 12px 0; }
+  #entrada::-webkit-scrollbar-thumb { background: var(--borde); border-radius: 4px; }
+  #entrada::-webkit-scrollbar-button { display: none; height: 0; }
+
+  #enviar, #micro {
+    background: var(--azul);
+    color: var(--blanco);
+    border: none;
+    border-radius: 50%;
+    width: 38px; height: 38px;
+    cursor: pointer;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+  }
+  #enviar:disabled, #micro:disabled { background: var(--borde); cursor: default; }
+  #enviar:focus-visible, #micro:focus-visible { outline: 2px solid var(--dorado); outline-offset: 2px; }
+  #micro.grabando { background: var(--alerta); animation: pulso 1.2s infinite; }
+  @keyframes pulso {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(194,65,12,0.4); }
+    50%      { box-shadow: 0 0 0 7px rgba(194,65,12,0); }
+  }
+
+  /* Contador de la grabación en curso */
+  .grabando-aviso {
+    background: var(--alerta);
+    color: var(--blanco);
+    align-self: flex-end;
+    border-radius: 14px;
+    padding: 10px 14px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .confirmar-audio { display: flex; gap: 8px; margin-top: 8px; }
+  .btn-si {
+    background: var(--dorado); color: var(--azul);
+    border: none; border-radius: 8px; padding: 8px 18px;
+    font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 600;
+    cursor: pointer;
+  }
+  .btn-no {
+    background: transparent; color: var(--tenue);
+    border: 1px solid var(--borde); border-radius: 8px; padding: 8px 18px;
+    font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 600;
+    cursor: pointer;
+  }
+
+  .sugerencia {
+    padding: 0 16px 12px;
+    font-size: 12px;
+    color: var(--tenue);
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .oculto { display: none !important; }
+
+  /* ---------- Cartel de permiso ---------- */
+  .modal-fondo {
+    position: fixed;
+    inset: 0;
+    background: rgba(22, 38, 77, 0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    z-index: 10;
+  }
+  .modal {
+    background: var(--blanco);
+    border-radius: 14px;
+    padding: 22px;
+    max-width: 380px;
+    box-shadow: 0 12px 40px rgba(22, 38, 77, 0.25);
+  }
+  .modal-titulo {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: 17px;
+    color: var(--azul);
+    margin-bottom: 10px;
+  }
+  .modal p { font-size: 14px; margin-bottom: 10px; }
+  .modal-nota { font-size: 12px; color: var(--tenue); }
+  .modal-botones { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
 </style>
 </head>
 <body>
 
-<h1>Prueba de conexión con Apps Script</h1>
-<p>Verifica que el navegador pueda llamar al backend desde otro dominio,
-   y que el micrófono funcione fuera del sandbox de Apps Script.</p>
+<div class="panel">
+<header>
+  <span class="titulo">Asistente de facturación</span>
+  <span class="emisor" id="emisor"></span>
+</header>
 
-<button id="probar">Probar conexión</button>
-<button id="micro">Probar micrófono</button>
+<div id="hilo"></div>
 
-<pre id="salida">Esperando…</pre>
+<div class="sugerencia" id="sugerencia">
+  <div>💡 "Facturale a Juancito la consultoría de Agosto por 850.000 más IVA, pagó en efectivo"</div>
+  <div>💡 "Facturale a Pepito la venta de 5 artículos a 25.000 cada uno + Envío por 10.000. Pagó con transferencia"</div>
+</div>
+
+<footer>
+  <textarea id="entrada" rows="1" placeholder="Escribir aquí..." disabled></textarea>
+  <button id="micro" disabled title="Dictar el pedido" aria-label="Dictar el pedido">
+    <svg viewBox="0 0 100 100" width="21" height="21" fill="none"
+         stroke="currentColor" stroke-width="6" stroke-linecap="round">
+      <rect x="37" y="10" width="26" height="50" rx="13" ry="13"/>
+      <path d="M 23 42 A 27 27 0 0 0 77 42"/>
+      <line x1="50" y1="69" x2="50" y2="78"/>
+    </svg>
+  </button>
+  <button id="enviar" class="oculto" disabled title="Enviar">↑</button>
+</footer>
+</div>
+
+<div id="permiso" class="modal-fondo oculto">
+  <div class="modal">
+    <div class="modal-titulo">Facturá dictando</div>
+    <p>Para grabar tu pedido necesito acceder al micrófono. El audio se usa
+       solo para transcribir lo que decís y no queda guardado en ningún lado.</p>
+    <p class="modal-nota">Tu navegador te va a pedir permiso una vez.</p>
+    <div class="modal-botones">
+      <button class="btn-no" id="permiso-no">Ahora no</button>
+      <button class="btn-si" id="permiso-si">Permitir</button>
+    </div>
+  </div>
+</div>
 
 <script>
-  // Pegá acá la URL de la implementación del proyecto COPIA y su token.
-  var URL_SCRIPT = 'https://script.google.com/macros/s/AKfycbwYcILcwIwqaQd0kFxcN3ZUY8TBUVsqC9xypJ545-oFbQcMdLuKHowRt9KBtJEnbd-Mog/exec';
-  var TOKEN      = 'fx7k9mQ4pR4vL8nT4wY5bH5jD2sA0zE';
+  // ---------- Configuración ----------
+  // La página es la misma para todos los clientes: la URL del backend y el
+  // token llegan por la URL, así que cada instancia arma su propio link
+  // desde su acción de AppSheet.
+  var qs        = new URLSearchParams(window.location.search);
+  var URL_SCRIPT = qs.get('u') || '';
+  var TOKEN      = qs.get('t') || '';
 
-  var salida = document.getElementById('salida');
+  var historial = [];
+  var ultimasFilas = [];
+  var idConversacion = "";
+  var esperando = false;
 
-  function mostrar(texto, clase) {
-    salida.textContent = texto;
-    salida.className = clase || '';
-  }
+  var hilo      = document.getElementById('hilo');
+  var entrada   = document.getElementById('entrada');
+  var btnEnviar = document.getElementById('enviar');
+  var btnMicro  = document.getElementById('micro');
 
-  // ---------- Conexión ----------
-  document.getElementById('probar').addEventListener('click', function() {
-    mostrar('Llamando al script…');
-
-    // El body va como text/plain a propósito: con application/json el
-    // navegador dispara un preflight OPTIONS que Apps Script no responde,
-    // y la llamada falla por CORS antes de salir.
-    fetch(URL_SCRIPT, {
+  // ---------- Puente con Apps Script ----------
+  // El body va como text/plain a propósito: con application/json el
+  // navegador dispara un preflight OPTIONS que Apps Script no responde,
+  // y la llamada falla por CORS antes de salir.
+  function llamar(datos) {
+    datos.accion = 'chat';
+    datos.token  = TOKEN;
+    return fetch(URL_SCRIPT, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({
-        accion: 'chat',
-        chat: 'iniciar',
-        token: TOKEN
+      body: JSON.stringify(datos)
+    }).then(function(r) { return r.json(); });
+  }
+
+  // ---------- Arranque ----------
+  if (!URL_SCRIPT || !TOKEN) {
+    mostrarAviso('Este enlace no es válido. Abrí el asistente desde el botón de la app.');
+  } else {
+    llamar({ chat: 'iniciar' })
+      .then(function(r) {
+        if (!r.ok) { mostrarAviso(r.motivo); return; }
+        idConversacion = r.idConversacion;
+        document.getElementById('emisor').textContent = r.razonSocial || '';
+        entrada.disabled = false;
+        btnMicro.disabled = false;
+        alternarBotones();
+        burbuja('asistente', '👋 ¡Hola! Contame qué necesitas y te genero el comprobante. ' +
+                'Quedarán en la pestaña de PENDIENTES de tu App para que los controles ' +
+                'antes de subirlos a ARCA. ✅');
       })
-    })
-    .then(function(r) { return r.json(); })
-    .then(function(r) {
-      if (r.ok) {
-        mostrar('Conectado.\n\nEmisor: ' + r.razonSocial +
-                '\nConversación: ' + r.idConversacion, 'ok');
-      } else {
-        mostrar('El script respondió, pero rechazó la llamada:\n\n' +
-                (r.motivo || JSON.stringify(r)), 'mal');
-      }
-    })
-    .catch(function(e) {
-      mostrar('No se pudo llamar al script:\n\n' + e.message +
-              '\n\nSuele ser CORS o la URL mal copiada.', 'mal');
-    });
+      .catch(function(e) { mostrarAviso('No se pudo abrir el asistente: ' + e.message); });
+  }
+
+  // ---------- Interacción ----------
+  entrada.addEventListener('input', function() {
+    this.style.height = 'auto';
+    this.style.height = Math.min(this.scrollHeight, 180) + 'px';
+    alternarBotones();
   });
 
-  // ---------- Micrófono ----------
-  document.getElementById('micro').addEventListener('click', function() {
-    mostrar('Pidiendo acceso al micrófono…');
+  function alternarBotones() {
+    var hayTexto = entrada.value.trim().length > 0;
+    var grabando = btnMicro.classList.contains('grabando');
+    btnMicro.classList.toggle('oculto', hayTexto && !grabando);
+    btnEnviar.classList.toggle('oculto', !hayTexto || grabando);
+    btnEnviar.disabled = !hayTexto || esperando;
+  }
+
+  entrada.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); enviar(); }
+  });
+  btnEnviar.addEventListener('click', enviar);
+
+  function enviar() {
+    var texto = entrada.value.trim();
+    if (!texto || esperando) return;
+
+    burbuja('yo', texto);
+    historial.push({ rol: 'user', texto: texto });
+    entrada.value = '';
+    entrada.style.height = 'auto';
+    alternarBotones();
+    document.getElementById('sugerencia').style.display = 'none';
+    bloquear(true);
+
+    var puntos = burbujaPensando();
+
+    llamar({
+      chat: 'mensaje',
+      historial: JSON.stringify(historial),
+      idConversacion: idConversacion
+    })
+    .then(function(r) {
+      puntos._avisos.forEach(clearTimeout);
+      puntos.remove();
+      bloquear(false);
+      if (!r.ok) { mostrarAviso(r.motivo); return; }
+
+      burbuja('asistente', r.mensaje);
+      historial.push({ rol: 'model', texto: r.mensaje });
+      if (r.avisos && r.avisos.length) mostrarAviso(r.avisos.join(' '));
+      ultimasFilas = r.comprobantes || [];
+      if (r.propuesta && r.propuesta.length) mostrarPropuesta(r.propuesta);
+    })
+    .catch(function(e) {
+      puntos._avisos.forEach(clearTimeout);
+      puntos.remove();
+      bloquear(false);
+      mostrarAviso('No se pudo procesar: ' + e.message);
+    });
+  }
+
+  function confirmar(boton) {
+    if (esperando) return;
+    boton.disabled = true;
+    boton.textContent = 'Generando...';
+    bloquear(true);
+
+    llamar({
+      chat: 'confirmar',
+      comprobantes: JSON.stringify(ultimasFilas),
+      idConversacion: idConversacion,
+      prompt: ultimoPedido()
+    })
+    .then(function(r) {
+      bloquear(false);
+      if (!r.ok) {
+        boton.disabled = false;
+        boton.textContent = boton.dataset.texto;
+        mostrarAviso(r.motivo);
+        return;
+      }
+      boton.textContent = 'Generados';
+
+      var caja = document.createElement('div');
+      caja.className = 'listo';
+      caja.innerHTML = '<div class="titulo">✅ ' +
+        r.comprobantes + (r.comprobantes === 1 ? ' comprobante creado' : ' comprobantes creados') +
+        '</div><div class="nota">Los encontrás en PENDIENTES. Revisalos y desde ahí los subís a ARCA.</div>';
+      hilo.appendChild(caja);
+
+      if (r.avisos && r.avisos.length) mostrarAviso(r.avisos.join(' '));
+
+      // Generar cierra el tema: se vacía el historial que viaja a la IA
+      // para que no pueda reconstruir un comprobante ya creado.
+      ultimasFilas = [];
+      historial = [{ rol: 'model', texto:
+        'Listo, los comprobantes anteriores ya fueron generados. ' +
+        'Contame si necesitás emitir alguno más.' }];
+      bajar();
+    })
+    .catch(function(e) {
+      bloquear(false);
+      boton.disabled = false;
+      boton.textContent = boton.dataset.texto;
+      mostrarAviso('No se pudieron generar: ' + e.message);
+    });
+  }
+
+  // ---------- Render ----------
+  function burbuja(quien, texto) {
+    var d = document.createElement('div');
+    d.className = 'burbuja ' + quien;
+
+    var cuerpo = document.createElement('span');
+    cuerpo.textContent = texto;
+    d.appendChild(cuerpo);
+
+    var hora = document.createElement('span');
+    hora.className = 'hora';
+    hora.textContent = new Date().toLocaleTimeString('es-AR',
+      { hour: '2-digit', minute: '2-digit', hour12: false });
+    d.appendChild(hora);
+
+    hilo.appendChild(d);
+    bajar();
+    return d;
+  }
+
+  function burbujaPensando() {
+    var d = document.createElement('div');
+    d.className = 'burbuja asistente';
+    d.innerHTML = '<div class="pensando"><span></span><span></span><span></span></div>';
+    hilo.appendChild(d);
+    bajar();
+
+    d._avisos = [
+      setTimeout(function() { d.textContent = 'Estoy procesando tu pedido...'; bajar(); }, 10000),
+      setTimeout(function() { d.textContent = 'Hay más demora de lo habitual, pero sigo trabajando...'; bajar(); }, 20000)
+    ];
+    return d;
+  }
+
+  function mostrarAviso(texto) {
+    var d = document.createElement('div');
+    d.className = 'burbuja aviso';
+    d.textContent = texto;
+    hilo.appendChild(d);
+    bajar();
+  }
+
+  function mostrarPropuesta(comprobantes) {
+    var cont = document.createElement('div');
+    cont.className = 'propuesta';
+
+    comprobantes.forEach(function(c) {
+      var t = document.createElement('div');
+      t.className = 'ticket';
+
+      var items = c.items.map(function(i) {
+        var detalle = i.cantidad + ' ' + i.unidad + ' × ' + plata(i.precio) + ' · IVA ' + i.alicuota;
+        return '<div class="item"><div class="que">' + escapar(i.descripcion) +
+               '<div class="detalle">' + escapar(detalle) + '</div></div>' +
+               '<div class="monto">' + plata(i.importe) + '</div></div>';
+      }).join('');
+
+      var talon = (c.iva > 0)
+        ? '<div class="etiqueta">Neto</div><div class="parcial">' + plata(c.neto) + '</div>' +
+          '<div class="etiqueta">IVA</div><div class="parcial">' + plata(c.iva) + '</div>' +
+          '<div class="etiqueta total-etq">Total</div><div class="total">' + plata(c.total) + '</div>'
+        : '<div class="etiqueta">Total</div><div class="total">' + plata(c.total) + '</div>';
+
+      var titulo = escapar(c.tipo) + ' · ' + escapar(c.cliente);
+      var sub = c.referencia
+        ? '<div class="referencia">' + escapar(c.referencia) +
+          (c.motivo ? ' · ' + escapar(c.motivo) : '') + '</div>'
+        : '';
+
+      t.innerHTML =
+        '<div class="cuerpo"><div class="cliente">' + titulo + '</div>' + sub + items + '</div>' +
+        '<div class="talon">' + talon + '</div>';
+      cont.appendChild(t);
+    });
+
+    var barra = document.createElement('div');
+    barra.className = 'barra-confirmar';
+    var btn = document.createElement('button');
+    btn.className = 'btn btn-generar';
+    btn.dataset.texto = (comprobantes.length === 1)
+      ? '📄 Generar comprobante' : '📄 Generar comprobantes';
+    btn.textContent = btn.dataset.texto;
+    btn.addEventListener('click', function() { confirmar(btn); });
+    barra.appendChild(btn);
+    cont.appendChild(barra);
+
+    hilo.appendChild(cont);
+    bajar();
+  }
+
+  // ---------- Audio ----------
+  // Fuera del sandbox de Apps Script se puede grabar de verdad con
+  // getUserMedia, sin depender del input de archivo del sistema.
+  var grabador = null, trozos = [], cortePorTiempo = null;
+  var permisoExplicado = false;
+  var aviso = null, contador = null;
+  var SEG_MAX = 20;
+
+  btnMicro.addEventListener('click', function() {
+    if (grabador && grabador.state === 'recording') { detenerGrabacion(); return; }
+    if (!permisoExplicado) {
+      document.getElementById('permiso').classList.remove('oculto');
+      return;
+    }
+    iniciarGrabacion();
+  });
+
+  document.getElementById('permiso-si').addEventListener('click', function() {
+    permisoExplicado = true;
+    document.getElementById('permiso').classList.add('oculto');
+    iniciarGrabacion();
+  });
+
+  document.getElementById('permiso-no').addEventListener('click', function() {
+    document.getElementById('permiso').classList.add('oculto');
+    entrada.focus();
+  });
+
+  function iniciarGrabacion() {
+    if (!navigator.mediaDevices || !window.MediaRecorder) {
+      mostrarAviso('Tu navegador no permite grabar audio. Escribí el pedido.');
+      return;
+    }
 
     navigator.mediaDevices.getUserMedia({ audio: true })
       .then(function(stream) {
-        var grabador = new MediaRecorder(stream);
-        var trozos = [];
+        trozos = [];
+        grabador = new MediaRecorder(stream);
         grabador.ondataavailable = function(e) { if (e.data.size) trozos.push(e.data); };
         grabador.onstop = function() {
           stream.getTracks().forEach(function(t) { t.stop(); });
-          var blob = new Blob(trozos, { type: grabador.mimeType });
-          mostrar('Grabación lista.\n\nFormato: ' + blob.type +
-                  '\nTamaño: ' + Math.round(blob.size / 1024) + ' KB', 'ok');
+          procesarGrabacion();
         };
         grabador.start();
-        mostrar('Grabando 3 segundos… hablá ahora.');
-        setTimeout(function() { grabador.stop(); }, 3000);
+
+        btnMicro.classList.add('grabando');
+        btnMicro.innerHTML = '<svg viewBox="0 0 24 24" width="15" height="15" ' +
+          'fill="currentColor"><rect x="5" y="5" width="14" height="14" rx="2"/></svg>';
+        btnMicro.title = 'Detener';
+        alternarBotones();
+
+        var quedan = SEG_MAX;
+        aviso = document.createElement('div');
+        aviso.className = 'grabando-aviso';
+        aviso.textContent = 'Grabando… ' + quedan + 's';
+        hilo.appendChild(aviso);
+        bajar();
+
+        contador = setInterval(function() {
+          quedan--;
+          if (aviso) aviso.textContent = 'Grabando… ' + quedan + 's';
+        }, 1000);
+
+        cortePorTiempo = setTimeout(detenerGrabacion, SEG_MAX * 1000);
       })
-      .catch(function(e) {
-        mostrar('No se pudo acceder al micrófono:\n\n' + e.name + ' — ' + e.message, 'mal');
+      .catch(function(err) {
+        // En el celular el permiso puede estar cortado a nivel del sistema,
+        // no del sitio: ahí el navegador ni siquiera llega a preguntar.
+        if (err.name === 'NotAllowedError') {
+          mostrarAviso('El micrófono está bloqueado. Revisalo en los permisos del sitio ' +
+                       '(el candado de la barra de direcciones) y, si estás en el celular, ' +
+                       'también en los ajustes del navegador.');
+        } else {
+          mostrarAviso('No pude acceder al micrófono: ' + err.name);
+        }
       });
-  });
+  }
+
+  function detenerGrabacion() {
+    clearTimeout(cortePorTiempo);
+    clearInterval(contador);
+    if (aviso) { aviso.remove(); aviso = null; }
+    if (grabador && grabador.state === 'recording') grabador.stop();
+
+    btnMicro.classList.remove('grabando');
+    btnMicro.innerHTML = '<svg viewBox="0 0 100 100" width="21" height="21" fill="none" ' +
+      'stroke="currentColor" stroke-width="6" stroke-linecap="round">' +
+      '<rect x="37" y="10" width="26" height="50" rx="13" ry="13"/>' +
+      '<path d="M 23 42 A 27 27 0 0 0 77 42"/>' +
+      '<line x1="50" y1="69" x2="50" y2="78"/></svg>';
+    btnMicro.title = 'Dictar el pedido';
+    alternarBotones();
+  }
+
+  function procesarGrabacion() {
+    if (!trozos.length) return;
+    var blob = new Blob(trozos, { type: grabador.mimeType || 'audio/webm' });
+
+    bloquear(true);
+    var puntos = burbujaPensando();
+
+    var lector = new FileReader();
+    lector.onloadend = function() {
+      var base64 = lector.result.split(',')[1];
+      llamar({ chat: 'transcribir', audio: base64, mimeType: blob.type })
+        .then(function(r) {
+          puntos._avisos.forEach(clearTimeout);
+          puntos.remove();
+          bloquear(false);
+          if (!r.ok) { mostrarAviso(r.motivo); return; }
+          mostrarConfirmacionAudio(r.texto);
+        })
+        .catch(function(e) {
+          puntos._avisos.forEach(clearTimeout);
+          puntos.remove();
+          bloquear(false);
+          mostrarAviso('No se pudo procesar el audio: ' + e.message);
+        });
+    };
+    lector.readAsDataURL(blob);
+  }
+
+  function mostrarConfirmacionAudio(texto) {
+    var d = document.createElement('div');
+    d.className = 'burbuja asistente';
+
+    var cuerpo = document.createElement('div');
+    cuerpo.innerHTML = 'Entendí esto:<br><b>' + escapar(texto) + '</b><br>¿Está bien?';
+    d.appendChild(cuerpo);
+
+    var barra = document.createElement('div');
+    barra.className = 'confirmar-audio';
+
+    var si = document.createElement('button');
+    si.className = 'btn-si';
+    si.textContent = 'Sí';
+    si.addEventListener('click', function() {
+      barra.remove();
+      entrada.value = texto;
+      alternarBotones();
+      enviar();
+    });
+
+    var no = document.createElement('button');
+    no.className = 'btn-no';
+    no.textContent = 'No';
+    no.addEventListener('click', function() {
+      barra.remove();
+      burbuja('asistente', 'Escribime el pedido corregido.');
+      entrada.focus();
+    });
+
+    barra.appendChild(si);
+    barra.appendChild(no);
+    d.appendChild(barra);
+    hilo.appendChild(d);
+    bajar();
+  }
+
+  // ---------- Utilidades ----------
+  function plata(n) {
+    return '$' + Number(n || 0).toLocaleString('es-AR',
+      { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+  function escapar(s) {
+    var d = document.createElement('div');
+    d.textContent = s == null ? '' : String(s);
+    return d.innerHTML;
+  }
+  function ultimoPedido() {
+    for (var i = historial.length - 1; i >= 0; i--) {
+      if (historial[i].rol === 'user') return historial[i].texto;
+    }
+    return '';
+  }
+  function bloquear(si) {
+    esperando = si;
+    entrada.disabled = si;
+    btnMicro.disabled = si;
+    alternarBotones();
+  }
+  function bajar() { hilo.scrollTop = hilo.scrollHeight; }
 </script>
 
 </body>
