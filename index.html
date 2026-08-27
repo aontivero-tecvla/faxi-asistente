@@ -392,9 +392,6 @@
   var TOKEN      = qs.get('t') || '';
 
   var historial = [];
-  // DIAGNÓSTICO: si la página se recarga entre mensajes, esto se ve en la
-  // consola cada vez, con una hora distinta.
-  console.log('Página cargada:', new Date().toLocaleTimeString());
   var ultimasFilas = [];
   var idConversacion = "";
   var esperando = false;
