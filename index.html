@@ -778,7 +778,14 @@
     no.textContent = 'No';
     no.addEventListener('click', function() {
       barra.remove();
-      burbuja('asistente', 'Escribime el pedido corregido.');
+      // La transcripción entra al historial aunque el usuario la rechace:
+      // sin eso, la corrección que escriba después no tiene contra qué
+      // aplicarse y el modelo arranca de cero.
+      historial.push({ rol: 'user', texto:
+        'Dicté esto, pero la transcripción puede tener errores: "' + texto + '"' });
+      historial.push({ rol: 'model', texto:
+        'Entendido. Decime qué hay que corregir de ese pedido y lo armo con el resto igual.' });
+      burbuja('asistente', 'Decime qué hay que corregir.');
       entrada.focus();
     });
 
