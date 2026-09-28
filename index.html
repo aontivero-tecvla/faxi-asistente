@@ -585,10 +585,18 @@
     // que suele estar pasando en cada momento y, sobre todo, muestran que el
     // asistente sigue trabajando. 
     var pasos = [
-      [ 1500, 'Leyendo tu pedido...'],
-      [ 3500, 'Buscando el cliente...'],
-      [ 6000, 'Revisando precios y alícuotas...'],
-      [ 9000, 'Armando el comprobante...'],
+      [  600, 'Leyendo tu pedido...'],
+      [ 1400, 'Interpretando...'],
+      [ 2200, 'Pensando...'],
+      [ 3000, 'Buscando clientes...'],
+      [ 3800, 'Detectando producto o servicio...'],
+      [ 4600, 'Interpretando cantidades...'],
+      [ 5400, 'Analizando alícuota...'],
+      [ 6200, 'Detectando precio...'],
+      [ 7000, 'Pensando...'],
+      [ 7800, 'Armando totales...'],
+      [ 8600, 'Estructurando comprobante...'],
+      [10000, 'Revisando que esté todo bien...'],
       [13000, 'Casi listo...'],
       [20000, 'Está tardando más de lo habitual, pero sigo trabajando...'],
       [35000, 'Seguimos esperando la respuesta. Si no aparece nada, volvé a intentar en un rato.']
@@ -853,17 +861,18 @@
   function _mensajeDeError(e) {
     var m = String(e && e.message || '');
 
-    if (m === 'RESPUESTA_INVALIDA') {
-      return 'Hubo un problema al procesar la respuesta. Volvé a escribir tu ' +
-             'pedido: suele funcionar al segundo intento.';
-    }
     if (m.indexOf('Failed to fetch') !== -1 || m.indexOf('NetworkError') !== -1) {
       return 'No se pudo conectar. Revisá tu conexión a internet y volvé a ' +
-             'intentar. Si sigue igual, cerrá el asistente y abrilo de nuevo ' +
-             'desde la app.';
+             'escribir tu mensaje.\n' +
+             'Si vuelve a fallar, cerrá el chat y volvé a ingresar.\n' +
+             'Si el problema sigue, contactá a soporte para que te ayuden.';
     }
-    return 'Algo salió mal: ' + m + '. Volvé a intentar, y si el problema ' +
-           'sigue, cerrá el asistente y abrilo de nuevo desde la app.';
+    return 'Hubo un problema al procesar tu pedido. Por favor volvé a ' +
+           'escribir tu mensaje.\n' +
+           'Si vuelve a fallar, cerrá el chat y volvé a ingresar.\n' +
+           'Si el problema sigue, contactá a soporte para que te ayuden.';
+
+    
   }
 
   
