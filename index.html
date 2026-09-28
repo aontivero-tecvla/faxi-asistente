@@ -128,9 +128,14 @@
     padding: 4px 2px;
   }
   .pensando .paso {
-    margin-left: 6px;
-    font-size: 12.5px;
+    margin-left: 8px;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
     color: var(--tenue);
+    opacity: 0.7;
+    white-space: nowrap;
     animation: aparecer 0.3s ease-out;
   }
   @keyframes aparecer {
@@ -609,23 +614,44 @@
     // en una sola llamada y no puede informar en qué paso está. Aproximan lo
     // que suele estar pasando en cada momento y, sobre todo, muestran que el
     // asistente sigue trabajando. 
-    var pasos = [
-      [  600, 'Leyendo tu pedido...'],
-      [ 1400, 'Interpretando...'],
-      [ 2200, 'Pensando...'],
-      [ 3000, 'Buscando clientes...'],
-      [ 3800, 'Detectando producto o servicio...'],
-      [ 4600, 'Interpretando cantidades...'],
-      [ 5400, 'Analizando alícuota...'],
-      [ 6200, 'Detectando precio...'],
-      [ 7000, 'Pensando...'],
-      [ 7800, 'Armando totales...'],
-      [ 8600, 'Estructurando comprobante...'],
+
+
+    // El primer pedido hay que interpretarlo entero; las correcciones
+    // posteriores son ajustes sobre algo ya armado, así que la secuencia
+    // larga ahí sonaría a que está haciendo más de lo que hace.
+    var esPrimero = (historial.filter(function(t) {
+      return t.rol === 'user';
+    }).length <= 1);
+
+    var pasos = esPrimero
+      ? [
+          [  600, 'Leyendo tu pedido...'],
+          [ 1400, 'Interpretando...'],
+          [ 2200, 'Pensando...'],
+          [ 3000, 'Buscando clientes...'],
+          [ 3800, 'Detectando producto o servicio...'],
+          [ 4600, 'Interpretando cantidades...'],
+          [ 5400, 'Analizando alícuota...'],
+          [ 6200, 'Detectando precio...'],
+          [ 7000, 'Pensando...'],
+          [ 7800, 'Armando totales...'],
+          [ 8600, 'Estructurando comprobante...']
+        ]
+      : [
+          [  600, 'Interpretando...'],
+          [ 1600, 'Pensando...'],
+          [ 3000, 'Armando totales...'],
+          [ 4500, 'Estructurando comprobante...']
+        ];
+
+    pasos = pasos.concat([
       [10000, 'Revisando que esté todo bien...'],
       [13000, 'Casi listo...'],
       [20000, 'Está tardando más de lo habitual, pero sigo trabajando...'],
       [35000, 'Seguimos esperando la respuesta. Si no aparece nada, volvé a intentar en un rato.']
-    ];
+    ]);
+
+    
 
     d._avisos = pasos.map(function(p) {
       return setTimeout(function() {
