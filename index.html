@@ -405,15 +405,28 @@
   // El body va como text/plain a propósito: con application/json el
   // navegador dispara un preflight OPTIONS que Apps Script no responde,
   // y la llamada falla por CORS antes de salir.
-  function llamar(datos) {
+    function llamar(datos) {
     datos.accion = 'chat';
     datos.token  = TOKEN;
     return fetch(URL_SCRIPT, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify(datos)
-    }).then(function(r) { return r.json(); });
+    })
+    .then(function(r) { return r.text(); })
+    .then(function(texto) {
+      // Cuando el script falla de entrada, Google devuelve su propia página
+      // de error en HTML. Parsearla como JSON daría un mensaje que no le
+      // dice nada al usuario.
+      try {
+        return JSON.parse(texto);
+      } catch (e) {
+        throw new Error('RESPUESTA_INVALIDA');
+      }
+    });
   }
+
+  
 
   // ---------- Arranque ----------
   if (!URL_SCRIPT || !TOKEN) {
@@ -431,7 +444,7 @@
                 'Quedarán en la pestaña de PENDIENTES de tu App para que los controles ' +
                 'antes de subirlos a ARCA. ✅');
       })
-      .catch(function(e) { mostrarAviso('No se pudo abrir el asistente: ' + e.message); });
+            .catch(function(e) { mostrarAviso(_mensajeDeError(e)); });
   }
 
   // ---------- Interacción ----------
@@ -485,11 +498,11 @@
       ultimasFilas = r.comprobantes || [];
       if (r.propuesta && r.propuesta.length) mostrarPropuesta(r.propuesta);
     })
-    .catch(function(e) {
+      .catch(function(e) {
       puntos._avisos.forEach(clearTimeout);
       puntos.remove();
       bloquear(false);
-      mostrarAviso('No se pudo procesar: ' + e.message);
+      mostrarAviso(_mensajeDeError(e));
     });
   }
 
@@ -819,6 +832,28 @@
     alternarBotones();
   }
   function bajar() { hilo.scrollTop = hilo.scrollHeight; }
+
+  // ---------------------------------------------------------------------
+  // Traduce las fallas técnicas a algo accionable: el usuario no puede
+  // hacer nada con "Unexpected token '<'", pero sí con "volvé a intentar".
+  // ---------------------------------------------------------------------
+  function _mensajeDeError(e) {
+    var m = String(e && e.message || '');
+
+    if (m === 'RESPUESTA_INVALIDA') {
+      return 'Hubo un problema al procesar la respuesta. Volvé a escribir tu ' +
+             'pedido: suele funcionar al segundo intento.';
+    }
+    if (m.indexOf('Failed to fetch') !== -1 || m.indexOf('NetworkError') !== -1) {
+      return 'No se pudo conectar. Revisá tu conexión a internet y volvé a ' +
+             'intentar. Si sigue igual, cerrá el asistente y abrilo de nuevo ' +
+             'desde la app.';
+    }
+    return 'Algo salió mal: ' + m + '. Volvé a intentar, y si el problema ' +
+           'sigue, cerrá el asistente y abrilo de nuevo desde la app.';
+  }
+
+  
 </script>
 
 </body>
