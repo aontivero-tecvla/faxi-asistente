@@ -458,7 +458,11 @@
       // La falla suele ser del camino de vuelta, no del backend: el pedido
       // llegó y se procesó. Reintentar una vez resuelve la mayoría de los
       // casos sin que el usuario tenga que reescribir nada.
-      if (!esReintento) {
+      
+      // Solo se reintenta lo que NO escribe en la base. Confirmar genera
+      // comprobantes: si la respuesta se pierde en el camino de vuelta, el
+      // backend ya los creó, y un reintento los duplicaría.
+      if (!esReintento && datos.chat !== 'confirmar') {
         return new Promise(function(resolver) {
           setTimeout(function() { resolver(llamar(datos, true)); }, 1200);
         });
