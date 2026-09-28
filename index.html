@@ -430,7 +430,10 @@
   // El body va como text/plain a propósito: con application/json el
   // navegador dispara un preflight OPTIONS que Apps Script no responde,
   // y la llamada falla por CORS antes de salir.
-    function llamar(datos) {
+  // Cuántas veces falló seguido en esta sesión: cambia el tono del mensaje.
+  var fallasSeguidas = 0;
+
+  function llamar(datos, esReintento) {
     datos.accion = 'chat';
     datos.token  = TOKEN;
     return fetch(URL_SCRIPT, {
@@ -444,10 +447,24 @@
       // de error en HTML. Parsearla como JSON daría un mensaje que no le
       // dice nada al usuario.
       try {
-        return JSON.parse(texto);
+        var r = JSON.parse(texto);
+        fallasSeguidas = 0;
+        return r;
       } catch (e) {
         throw new Error('RESPUESTA_INVALIDA');
       }
+    })
+    .catch(function(e) {
+      // La falla suele ser del camino de vuelta, no del backend: el pedido
+      // llegó y se procesó. Reintentar una vez resuelve la mayoría de los
+      // casos sin que el usuario tenga que reescribir nada.
+      if (!esReintento) {
+        return new Promise(function(resolver) {
+          setTimeout(function() { resolver(llamar(datos, true)); }, 1200);
+        });
+      }
+      fallasSeguidas++;
+      throw e;
     });
   }
 
@@ -617,40 +634,47 @@
     // que suele estar pasando en cada momento y, sobre todo, muestran que el
     // asistente sigue trabajando. 
 
-
+    
     // El primer pedido hay que interpretarlo entero; las correcciones
-    // posteriores son ajustes sobre algo ya armado, así que la secuencia
-    // larga ahí sonaría a que está haciendo más de lo que hace.
+    // posteriores son ajustes sobre algo ya armado.
     var esPrimero = (historial.filter(function(t) {
       return t.rol === 'user';
     }).length <= 1);
 
+
+    
+    // Los tiempos salen de lo medido: un primer pedido tarda entre 4 y 16
+    // segundos, con la mayoría cerca de 8; una corrección, entre 4 y 14,
+    // con la mayoría cerca de 6. Los pasos se espacian para que siempre
+    // haya un cambio a la vista en esa franja.
     var pasos = esPrimero
       ? [
-          [  600, 'Leyendo tu pedido...'],
-          [ 1400, 'Interpretando...'],
-          [ 2200, 'Pensando...'],
-          [ 3000, 'Buscando clientes...'],
-          [ 3800, 'Detectando producto o servicio...'],
-          [ 4600, 'Interpretando cantidades...'],
-          [ 5400, 'Analizando alícuota...'],
-          [ 6200, 'Detectando precio...'],
-          [ 7000, 'Pensando...'],
-          [ 7800, 'Armando totales...'],
-          [ 8600, 'Estructurando comprobante...']
+          [  700, 'Leyendo tu pedido...'],
+          [ 1500, 'Interpretando...'],
+          [ 2300, 'Pensando...'],
+          [ 3200, 'Buscando clientes...'],
+          [ 4100, 'Detectando producto o servicio...'],
+          [ 5000, 'Interpretando cantidades...'],
+          [ 5900, 'Analizando alícuota...'],
+          [ 6800, 'Detectando precio...'],
+          [ 7700, 'Armando totales...'],
+          [ 8700, 'Estructurando comprobante...']
         ]
       : [
-          [  600, 'Interpretando...'],
-          [ 1600, 'Pensando...'],
-          [ 3000, 'Armando totales...'],
-          [ 4500, 'Estructurando comprobante...']
+          [  700, 'Interpretando...'],
+          [ 1800, 'Pensando...'],
+          [ 3200, 'Revisando los datos...'],
+          [ 4600, 'Armando totales...'],
+          [ 6200, 'Estructurando comprobante...'],
+          [ 7800, 'Ajustando el comprobante...']
         ];
 
     pasos = pasos.concat([
-      [10000, 'Revisando que esté todo bien...'],
-      [13000, 'Casi listo...'],
-      [20000, 'Está tardando más de lo habitual, pero sigo trabajando...'],
-      [35000, 'Seguimos esperando la respuesta. Si no aparece nada, volvé a intentar en un rato.']
+      [ 9800, 'Revisando que esté todo bien...'],
+      [12000, 'Terminando...'],
+      [15000, 'Un momento más...'],
+      [19000, 'Está tardando más de lo habitual, pero sigo trabajando...'],
+      [30000, 'Seguimos esperando la respuesta. Si no aparece nada, volvé a intentar en un rato.']
     ]);
 
     
@@ -929,12 +953,15 @@
              'Si vuelve a fallar, cerrá el chat y volvé a ingresar.\n' +
              'Si el problema sigue, contactá a soporte para que te ayuden.';
     }
-    return 'Hubo un problema al procesar tu pedido. Por favor volvé a ' +
-           'escribir tu mensaje.\n' +
-           'Si vuelve a fallar, cerrá el chat y volvé a ingresar.\n' +
-           'Si el problema sigue, contactá a soporte para que te ayuden.';
-
-    
+    if (fallasSeguidas <= 1) {
+      return 'No pude procesar tu pedido. Por favor volvé a escribir tu mensaje.';
+    }
+    if (fallasSeguidas === 2) {
+      return 'Sigue fallando. Cerrá el chat y volvé a abrirlo desde la app, ' +
+             'después intentá de nuevo.';
+    }
+    return 'El asistente no está respondiendo. Contactá a soporte para que ' +
+           'te ayuden a resolverlo.';
   }
 
   
