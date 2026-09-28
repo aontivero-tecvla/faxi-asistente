@@ -580,10 +580,23 @@
     hilo.appendChild(d);
     bajar();
 
-    d._avisos = [
-      setTimeout(function() { d.textContent = 'Estoy procesando tu pedido...'; bajar(); }, 10000),
-      setTimeout(function() { d.textContent = 'Hay más demora de lo habitual, pero sigo trabajando...'; bajar(); }, 20000)
+    // Los mensajes van por tiempo, no por avance real: el backend hace todo
+    // en una sola llamada y no puede informar en qué paso está. Aproximan lo
+    // que suele estar pasando en cada momento y, sobre todo, muestran que el
+    // asistente sigue trabajando.
+    var pasos = [
+      [ 1500, 'Leyendo tu pedido...'],
+      [ 3500, 'Buscando el cliente...'],
+      [ 6000, 'Revisando precios y alícuotas...'],
+      [ 9000, 'Armando el comprobante...'],
+      [13000, 'Casi listo...'],
+      [20000, 'Está tardando más de lo habitual, pero sigo trabajando...'],
+      [35000, 'Seguimos esperando la respuesta. Si no aparece nada, volvé a intentar en un rato.']
     ];
+
+    d._avisos = pasos.map(function(p) {
+      return setTimeout(function() { d.textContent = p[1]; bajar(); }, p[0]);
+    });
     return d;
   }
 
