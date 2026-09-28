@@ -121,7 +121,25 @@
     font-size: 13px;
   }
 
-  .pensando { display: flex; gap: 4px; padding: 4px 2px; }
+  .pensando {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 2px;
+  }
+  .pensando .paso {
+    margin-left: 6px;
+    font-size: 12.5px;
+    color: var(--tenue);
+    animation: aparecer 0.3s ease-out;
+  }
+  @keyframes aparecer {
+    from { opacity: 0; transform: translateX(-4px); }
+    to   { opacity: 1; transform: none; }
+  }
+  @media (prefers-reduced-motion: reduce) { .pensando .paso { animation: none; } }
+
+  
   .pensando span {
     width: 6px; height: 6px; border-radius: 50%;
     background: var(--tenue);
@@ -574,11 +592,18 @@
   }
 
   function burbujaPensando() {
+    // Sin burbuja: los puntitos y el texto flotan sueltos en el hilo, así
+    // se lee como una actividad en curso y no como un mensaje del asistente.
     var d = document.createElement('div');
-    d.className = 'burbuja asistente';
-    d.innerHTML = '<div class="pensando"><span></span><span></span><span></span></div>';
+    d.className = 'pensando';
+    d.innerHTML = '<span></span><span></span><span></span>' +
+                  '<span class="paso"></span>';
     hilo.appendChild(d);
     bajar();
+
+    var etiqueta = d.querySelector('.paso');
+
+    
 
     // Los mensajes van por tiempo, no por avance real: el backend hace todo
     // en una sola llamada y no puede informar en qué paso está. Aproximan lo
@@ -603,7 +628,16 @@
     ];
 
     d._avisos = pasos.map(function(p) {
-      return setTimeout(function() { d.textContent = p[1]; bajar(); }, p[0]);
+      return setTimeout(function() {
+        // Se reemplaza el nodo para que la animación de entrada se dispare
+        // en cada paso: cambiar solo el texto no la reinicia.
+        var nuevo = document.createElement('span');
+        nuevo.className = 'paso';
+        nuevo.textContent = p[1];
+        etiqueta.replaceWith(nuevo);
+        etiqueta = nuevo;
+        bajar();
+      }, p[0]);
     });
     return d;
   }
